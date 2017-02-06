@@ -10,6 +10,7 @@ import math
 import numpy as np
 np.random.seed(0)
 import scipy
+import IPython
 
 # OpenRAVE
 import openravepy
@@ -102,8 +103,16 @@ class RoboHandler:
   
   # order the grasps - but instead of evaluating the grasp, evaluate random perturbations of the grasp 
   def order_grasps_noisy(self):
-    self.grasps_ordered_noisy = self.grasps_ordered.copy() #you should change the order of self.grasps_ordered_noisy
-    #TODO set the score with your evaluation function (over random samples) and sort
+    self.grasps_ordered_noisy = self.grasps_ordered.copy()
+    
+    for grasp in self.grasps_ordered_noisy:
+      grasp = self.sample_random_grasp(grasp) # Add perturbation
+      grasp[self.graspindices.get('performance')] = self.eval_grasp(grasp)
+    
+    # sort!
+    order = np.argsort(self.grasps_ordered_noisy[:,self.graspindices.get('performance')[0]])
+    order = order[::-1]
+    self.grasps_ordered_noisy = self.grasps_ordered_noisy[order]
 
   # function to evaluate grasps
   # returns a score, which is some metric of the grasp
@@ -172,17 +181,23 @@ class RoboHandler:
     #sample random position
     RAND_DIST_SIGMA = 0.01 #TODO you may want to change this
     pos_orig = grasp[self.graspindices['igrasppos']]
-    #TODO set a random position
+    
+    pos_new = [pos_coord + np.random.normal(0, RAND_DIST_SIGMA) for pos_coord in pos_orig]
 
+    grasp[self.graspindices['igrasppos']] = pos_new
 
     #sample random orientation
     RAND_ANGLE_SIGMA = np.pi/24 #TODO you may want to change this
     dir_orig = grasp[self.graspindices['igraspdir']]
     roll_orig = grasp[self.graspindices['igrasproll']]
-    #TODO set the direction and roll to be random
+    
+    dir_new = [dir_coord + np.random.normal(0, RAND_DIST_SIGMA) for dir_coord in dir_orig]
+    roll_new = roll_orig + np.random.normal(0, RAND_ANGLE_SIGMA)
+    
+    grasp[self.graspindices['igraspdir']] = dir_new
+    grasp[self.graspindices['igrasproll']] = roll_new
 
     return grasp
-
 
   #displays the grasp
   def show_grasp(self, grasp, delay=5):
@@ -205,7 +220,6 @@ class RoboHandler:
 
 if __name__ == '__main__':
   robo = RoboHandler()
-  import IPython
   IPython.embed()
   #time.sleep(10000) #to keep the openrave window open
 

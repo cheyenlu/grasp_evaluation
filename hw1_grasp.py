@@ -106,7 +106,7 @@ class RoboHandler:
     self.grasps_ordered_noisy = self.grasps_ordered.copy()
     
     for grasp in self.grasps_ordered_noisy:
-      grasp = self.sample_random_grasp(grasp) # Add perturbation
+      grasp[...] = self.sample_random_grasp(grasp) # Add perturbation
       grasp[self.graspindices.get('performance')] = self.eval_grasp(grasp)
     
     # sort!
